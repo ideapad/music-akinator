@@ -32,3 +32,8 @@
   <input #lyrics type="text" name="lyrics">
   <button (click)="recognizeLyrics(lyrics.value)">Recognize lyrics</button>
 </div>
+
+<mat-slider min="1" max="5" step="0.5" value="1.5"></mat-slider>
+
+<mat-basic-audio-player [audioUrl]="musicLink" [title]="'This is music ttitle'"
+            [displayTitle]="'thisi is titles'" [displayVolumeControls]="true"></mat-basic-audio-player>
