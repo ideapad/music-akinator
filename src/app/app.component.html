@@ -17,3 +17,18 @@
     <audio controls="" *ngIf="url">
         <source [src]="sanitize(url)" type="audio/wav">
     </audio>
+
+
+
+<button (click)="start()">START</button>
+<button (click)="stop()">STOP</button>
+
+<audio controls="" *ngIf="mp3Url">
+  <source [src]="sanitize(mp3Url)" type="audio/wav">
+</audio>
+
+<div>
+  Enter lyrics of your song:
+  <input #lyrics type="text" name="lyrics">
+  <button (click)="recognizeLyrics(lyrics.value)">Recognize lyrics</button>
+</div>

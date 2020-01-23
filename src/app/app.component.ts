@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import * as RecordRTC from 'recordrtc';
+import { Component } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 
@@ -10,14 +9,12 @@ declare var Microm;
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
-  title = 'music-akinator';
+export class AppComponent {
+  title = 'myApp';
 
   private microm;
-  private record;
-  private recording = false;
-  private url;
-  private error;
+  public mp3Url;
+
   constructor(private domSanitizer: DomSanitizer, private http: HttpClient) {
   }
 
@@ -25,69 +22,56 @@ export class AppComponent implements OnInit {
     this.microm = new Microm();
   }
 
+
+  start() {
+    this.microm.record().then(function() {
+      console.log('recording...')
+    }).catch(function() {
+      console.log('error recording');
+    });
+  }
+
+  async stop() {
+    const result = await this.microm.stop();
+    const mp3 = result;
+    console.log(mp3.url, mp3.blob, mp3.buffer);
+    this.mp3Url = mp3.url;
+
+    const file = new File(mp3.buffer, 'me-at-thevoice.mp3', {
+      type: mp3.blob.type,
+      lastModified: Date.now()
+    });
+
+    this.processForRecognition(file);
+  }
+
+  play() {
+    this.microm.play();
+  }
+
+  // downloadMp3() {
+  //   var fileName = 'cat_voice';
+  //   this.microm.download(fileName);
+  // }
+
   sanitize(url:string){
       return this.domSanitizer.bypassSecurityTrustUrl(url);
   }
-  
-  initiateRecording() {
-      
-      this.recording = true;
-      let mediaConstraints = {
-          video: false,
-          audio: true
-      };
-      navigator.mediaDevices
-          .getUserMedia(mediaConstraints)
-          .then(this.successCallback.bind(this), this.errorCallback.bind(this));
+
+  processForRecognition(file: File) {
+    const formData = new FormData();
+    formData.append('return', 'timecode,apple_music,deezer,spotify');
+    formData.append('api_token', '2d9bdb6e6f225b189f6b4eaea1a1d1c1');
+    formData.append('file', file, 'to_recognize.mp3');
+
+    this.http.post('https://api.audd.io/', formData).subscribe(res => console.log(res), error => console.log(error));
   }
 
-  /**
-   * Will be called automatically.
-   */
-  successCallback(stream) {
-      var options = {
-          mimeType: "audio/wav",
-          numberOfAudioChannels: 1
-      };
-      //Start Actuall Recording
-      var StereoAudioRecorder = RecordRTC.StereoAudioRecorder;
-      this.record = new StereoAudioRecorder(stream, options);
-      this.record.record();
-  }
-  /**
-   * Stop recording.
-   */
-  stopRecording() {
-      this.recording = false;
-      this.record.stop(this.processRecording.bind(this));
-  }
-  /**
-   * processRecording Do what ever you want with blob
-   * @param  {any} blob Blog
-   */
-  processRecording(blob) {
-      this.url = URL.createObjectURL(blob);
-      this.processForRecognition();
-  }
-  /**
-   * Process Error.
-   */
-  errorCallback(error) {
-      this.error = 'Can not play audio in your browser';
-  }
+  recognizeLyrics(text: string) {
+    const formData = new FormData();
+    formData.append('q', text);
+    formData.append('api_token', '2d9bdb6e6f225b189f6b4eaea1a1d1c1');
 
-
-  processForRecognition() {
-    const data = {
-      url: this.url,
-      return: 'timecode,apple_music,deezer,spotify',
-      api_token: '2d9bdb6e6f225b189f6b4eaea1a1d1c1'
-    }
-
-    const header = {
-      "Content-Type": "multipart/form-data"
-    }
-
-    this.http.post('https://api.audd.io/', data, { headers: header } ).subscribe(res => console.log(res), error => console.log(error));
+    this.http.post('https://api.audd.io/findLyrics/', formData).subscribe(res => console.log(res), error => console.log(error));
   }
 }
